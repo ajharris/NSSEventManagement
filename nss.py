@@ -1,7 +1,7 @@
-from flask import Flask, render_template, session, redirect, url_for
+from flask import Flask, render_template, session, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms import StringField, DateTimeField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, InputRequired
 from flask_bootstrap import Bootstrap
 from dotenv import load_dotenv
 
@@ -11,8 +11,8 @@ bootstrap = Bootstrap(app)
 
 class ShiftForm(FlaskForm):
     # Date, Event Name, #, Account Manager, Location, Time In, Time Out, Number of Hours
-    start = DateTimeField('Shift Start: ', validators=[DataRequired()])
-    end = DateTimeField('Shift End: ', validators=[DataRequired()])
+    start = StringField('Shift Start: ', id='startpick', validators=([InputRequired(), DataRequired()]))
+    end = StringField('Shift End: ', id='endpick', validators=([InputRequired(), DataRequired()]))
 
     submit = SubmitField('Submit')
 
@@ -26,8 +26,9 @@ def timesheet():
     if form.validate_on_submit():
         session['start'] = form.start.data
         session['end'] = form.end.data
-        form.end.data = None
-    return render_template('timesheet.html', form=form, start=session.get('start'), end=session.get('end'))
+        print(session['start'] + ' to ' + session['end'])
+        return redirect(url_for('timesheet'))
+    return render_template('timesheet.html', form=form)
 
 @app.errorhandler(404) 
 def page_not_found(e):
