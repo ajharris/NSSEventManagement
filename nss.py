@@ -72,7 +72,7 @@ def index():
 def timesheet():
     shift = ShiftForm()
     if shift.validate_on_submit():
-        worker = Worker.query.filter_by(username=shift.name.data)
+        worker = Worker.query.filter_by(worker=shift.worker.data)
         session['start'] = shift.start.data
         session['end'] = shift.end.data
         session['eventName'] = shift.eventName.data
