@@ -8,6 +8,7 @@ from wtforms.validators import DataRequired, InputRequired
 from flask_bootstrap import Bootstrap
 from dotenv import load_dotenv
 import os
+import datetime 
 
 
 
@@ -41,15 +42,39 @@ class Shift(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start = db.Column(db.DateTime, unique=False)
     end = db.Column(db.DateTime, unique=False)
-    eventName = db.Column(db.String, unique=True)
-    showNumber = db.Column(db.Integer, unique=True)
+    eventName = db.Column(db.String, unique=False)
+    showNumber = db.Column(db.Integer, unique=False)
     accountManager = db.Column(db.String, unique=False)
     location = db.Column(db.String, unique=False)
 
-    worker_id = db.Column(db.Integer, db.ForeignKey('workers.id'))
+    # worker_id = db.Column(db.Integer, db.ForeignKey('workers.id'))
+
+    def create(self):
+        
+        shift = Shift()
+        shift.start = datetime.datetime.strptime(session['start'], '%m/%d/%Y %I:%M %p')
+        shift.end = datetime.datetime.strptime(session['end'], '%m/%d/%Y %I:%M %p')    
+
+        shift.eventName= session['eventName']
+        shift.showNumber = session['showNumber']
+        shift.accountManager = session['accountManager']
+        shift.location = session['location']
+
+        db.session.add(shift)
+        db.session.commit()
+    
+    def retrieve(self, id):
+        return Shift.query.filter_by(id=id)
+    
+    def delete(self, id):
+        shift = Shift.query.filter_by(id=id)
+        db.session.delete(shift)
+        db.session.commit()
+
+
 
     def __repr__(self):
-        return '<Shift %r %r>' % self.showNumber, self.eventName
+        return '<Shift {0} {1} >'.format(self.showNumber, self.eventName)
     
 class Worker(db.Model):
     __tablename__ = 'workers'
@@ -58,7 +83,7 @@ class Worker(db.Model):
     rate = db.Column(db.Float, unique=False)
     
 
-    shifts = db.relationship('Shift', backref='worker')
+    # shifts = db.relationship('Shift', backref='worker')
 
     password_hash = db.Column(db.String(128))
     @property
@@ -71,7 +96,7 @@ class Worker(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return '<Worker %r $r>' % self.worker, self.rate
+        return '<Worker {0}, {1}'.format(self.worker, self.rate)
 
 
 
@@ -90,6 +115,10 @@ def timesheet():
         session['showNumber'] = shift.showNumber.data
         session['accountManager'] = shift.accountManager.data
         session['location'] = shift.location.data
+
+        shift = Shift()
+        shift.create()
+
         return redirect(url_for('timesheet'))
     return render_template('timesheet.html', shift=shift)
 
