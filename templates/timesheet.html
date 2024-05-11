@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 
+
 {% block head %}
   {{ super() }}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css">
@@ -19,6 +20,10 @@
     $(function () {
       $('#endpick').datetimepicker();
     });
+
+    async function refreshDisplay(){
+      const a = await fetch("/refreshDisplay?data=")
+  }
   </script>
 {% endblock %}
 
@@ -31,7 +36,9 @@
 </div>
 
     <h2>Report</h2>
-    <p>Here is where the current pay period will be reported back in case any records need to be edited</p>
+    <p>Here is where the current pay period will be reported back in case any records need to be edited <button onclick=refreshDisplay()>Refresh</button></p>
+  
+    {{ report|safe }}
     
 
 {% endblock %}

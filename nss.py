@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, redirect, url_for, flash
+from flask import Flask, render_template, session, redirect, url_for, flash, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -9,6 +9,7 @@ from flask_bootstrap import Bootstrap
 from dotenv import load_dotenv
 import os
 import datetime 
+import pandas as pd
 
 
 
@@ -40,6 +41,7 @@ class ShiftForm(FlaskForm):
 class Shift(db.Model):
     __tablename__ = 'shifts'
     id = db.Column(db.Integer, primary_key=True)
+    worker = db.Column(db.String, unique=False)
     start = db.Column(db.DateTime, unique=False)
     end = db.Column(db.DateTime, unique=False)
     eventName = db.Column(db.String, unique=False)
@@ -74,7 +76,7 @@ class Shift(db.Model):
 
 
     def __repr__(self):
-        return '<Shift {0} {1} >'.format(self.showNumber, self.eventName)
+        return '<Shift {0} {1} {2}>'.format(self.showNumber, self.eventName, self.worker)
     
 class Worker(db.Model):
     __tablename__ = 'workers'
@@ -106,6 +108,7 @@ def index():
 
 @app.route('/timesheet', methods=['GET', 'POST'])
 def timesheet():
+    report = createTimeReportCH()
     shift = ShiftForm()
     if shift.validate_on_submit():
         worker = Worker.query.filter_by(worker=shift.worker.data)
@@ -120,7 +123,7 @@ def timesheet():
         shift.create()
 
         return redirect(url_for('timesheet'))
-    return render_template('timesheet.html', shift=shift)
+    return render_template('timesheet.html', shift=shift, report=report)
 
 @app.errorhandler(404) 
 def page_not_found(e):
@@ -132,3 +135,35 @@ def internal_server_error(e):
 @app.shell_context_processor
 def make_shell_context():
     return dict(db=db, Shift=Shift, Worker=Worker)
+
+@app.route('/refreshDisplay')
+def refresh_Display():
+    # display = request.args.get('data')
+    # print(display)
+
+    createTimeReportCH()
+
+###### Reports ######
+
+#function will create an excel file in the format Cheryl wants for timesheets
+def createTimeReportCH():
+    shifts = Shift.query.all()
+    print(shifts)
+
+    date =[]
+    event =[]
+    location =[]
+    times =[]
+    hours =[]
+
+# Date	Event Name/#/Account Mgr	Location	Time In/Out	# of Hours
+    for shift in shifts:
+        date.append(shift.start.date())
+        event.append('{0}/{1}/{2}'.format(shift.eventName, shift.showNumber, shift.accountManager))
+        location.append(shift.location)
+        times.append('{0}/{1}'.format(shift.start.time(), shift.end.time()))
+        hours.append(float((shift.end - shift.start).total_seconds()/3600))
+
+    df = pd.DataFrame({"date":date, "event":event, "location":location, "times":times, "hours":hours})
+
+    return df.to_html()
