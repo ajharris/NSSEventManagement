@@ -166,4 +166,4 @@ def createTimeReportCH():
 
     df = pd.DataFrame({"date":date, "event":event, "location":location, "times":times, "hours":hours})
 
-    return df.to_html()
+    return df.to_html(index=False, header=False)
