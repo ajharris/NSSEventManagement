@@ -22,7 +22,7 @@
     });
 
     async function refreshDisplay(){
-      const a = await fetch("/refreshDisplay?data=")
+      const a = await fetch("/refreshTimesheetDisplay?data=")
   }
   </script>
 {% endblock %}
@@ -36,7 +36,7 @@
 </div>
 
     <h2>Report</h2>
-    <p>Here is where the current pay period will be reported back in case any records need to be edited <button onclick=refreshDisplay()>Refresh</button></p>
+    <p>Here is where the current pay period will be reported back in case any records need to be edited <button onclick=refreshTimesheetDisplay()>Refresh</button></p>
   
     {{ report|safe }}
     
