@@ -9,7 +9,7 @@ from wtforms.validators import DataRequired, InputRequired
 from flask_bootstrap import Bootstrap
 from dotenv import load_dotenv
 import os
-import datetime
+from datetime import datetime
 import pandas as pd
 from flask_wtf.csrf import CSRFProtect
 
@@ -77,7 +77,7 @@ class Expense(db.Model):
 
     def create(self):
         expense = Expense()
-        expense.date = datetime.datetime.strptime(session['date'], '%m/%d/%Y %I:%M %p')
+        expense.date = datetime.strptime(session['date'], '%m/%d/%Y %I:%M %p')
         expense.worker = session['worker']
         expense.receiptNumber = session['receiptNumber']
         expense.accountManager = session['accountManager']
@@ -107,8 +107,8 @@ class Shift(db.Model):
 
     def create(self):
         shift = Shift()
-        shift.start = datetime.datetime.strptime(session['start'], '%m/%d/%Y %I:%M %p')
-        shift.end = datetime.datetime.strptime(session['end'], '%m/%d/%Y %I:%M %p')
+        shift.start = datetime.strptime(session['start'], '%m/%d/%Y %I:%M %p')
+        shift.end = datetime.strptime(session['end'], '%m/%d/%Y %I:%M %p')
         shift.showName = session['showName']
         shift.showNumber = session['showNumber']
         shift.accountManager = session['accountManager']
