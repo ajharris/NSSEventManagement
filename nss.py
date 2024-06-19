@@ -4,14 +4,16 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import delete
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateTimeField, SubmitField, IntegerField, FloatField, SelectField
+from wtforms import StringField, DateTimeField, SubmitField, IntegerField, FloatField, SelectField, FileField
 from wtforms.validators import DataRequired, InputRequired
+from flask_wtf.file import FileAllowed, FileRequired
 from flask_bootstrap import Bootstrap
 from dotenv import load_dotenv
 import os
 from datetime import datetime
 import pandas as pd
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.utils import secure_filename
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -23,6 +25,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
+
+UPLOAD_FOLDER = 'uploads/receipts'
+ALLOWED_EXTENSIONS = {'pdf', 'jpeg', 'jpg'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 accountManagersList = ['Rob Sandolowich', 'Joel Dubin', 'Corbin Elliott', 'Fox Procenko', 'Dave Lickers']
 
@@ -41,6 +51,8 @@ class ExpenseForm(FlaskForm):
     details = StringField('Expense Details: ', validators=[InputRequired(), DataRequired()])
     net = FloatField("Subtotal: ", validators=[InputRequired(), DataRequired()])
     hst = FloatField("HST: ", validators=[InputRequired(), DataRequired()])
+    receipt = FileField('Receipt', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'pdf'], 'Images and PDFs only!')])
+
     submit = SubmitField('Submit')
 
 class EventForm(FlaskForm):
@@ -74,6 +86,7 @@ class Expense(db.Model):
     net = db.Column(db.Float, unique=False)
     hst = db.Column(db.Float, unique=False)
     total = db.Column(db.Float, unique=False)
+    receipt = db.Column(db.String(255), nullable=True) 
 
     def create(self):
         expense = Expense()
@@ -192,27 +205,43 @@ def timesheet():
 @app.route('/expenses', methods=['GET', 'POST'])
 def expenses():
     report = createExpenseReportCH()
-    expense = ExpenseForm()
-    if expense.validate_on_submit():
-        showNumber = expense.showNumber.data
-        event = Event.query.filter_by(showNumber=showNumber).first()
+    expense_form = ExpenseForm()
+    
+    if expense_form.validate_on_submit():
+        show_number = expense_form.showNumber.data
+        event = Event.query.filter_by(showNumber=show_number).first()
+        
         if event:
-            session['receiptNumber'] = expense.receiptNumber.data
-            session['date'] = expense.date.data
-            session['worker'] = expense.worker.data
-            session['accountManager'] = event.accountManager
-            session['showName'] = event.showName
-            session['showNumber'] = showNumber
-            session['details'] = expense.details.data
-            session['net'] = expense.net.data
-            session['hst'] = expense.hst.data
-
-            expense_model = Expense()
-            expense_model.create()
-            return redirect(url_for('expenses'))
+            # Handle file upload
+            receipt_file = expense_form.receipt_file.data
+            if receipt_file and allowed_file(receipt_file.filename):
+                filename = secure_filename(receipt_file.filename)
+                receipt_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                
+                # Create a new Expense object and populate its attributes
+                new_expense = Expense(
+                    receipt_number=expense_form.receiptNumber.data,
+                    date=expense_form.date.data,
+                    worker=expense_form.worker.data,
+                    account_manager=event.accountManager,
+                    show_name=event.showName,
+                    show_number=show_number,
+                    details=expense_form.details.data,
+                    net=expense_form.net.data,
+                    hst=expense_form.hst.data,
+                    receipt_filename=filename  # Assuming receipt_filename is a field in your Expense model
+                )
+                
+                new_expense.create()  # Assuming 'create' method adds and commits the new expense to the database
+                
+                flash('Expense added successfully', 'success')
+                return redirect(url_for('expenses'))
+            else:
+                flash('Invalid file format for receipt (PDF or JPEG required)', 'danger')
         else:
             flash('Invalid Event Number', 'danger')
-    return render_template('expenses.html', expense=expense, report=report)
+    
+    return render_template('expenses.html', expense=expense_form, report=report)
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -296,7 +325,7 @@ def createExpenseReportCH():
 
     expensereport['Date'] = pd.to_datetime(expensereport['Date'], format='%m/%d/%Y')
 
-    expensereport = expensereport.sort_values(by='date')
+    expensereport = expensereport.sort_values(by='Date')
 
     pd.set_option('display.max_colwidth', None)
 
