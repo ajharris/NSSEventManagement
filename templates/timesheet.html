@@ -1,13 +1,10 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-
 {% block head %}
   {{ super() }}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css">
 {% endblock %}
-
-
 
 {% block scripts %}
   {{ super() }}
@@ -21,9 +18,15 @@
       $('#endpick').datetimepicker();
     });
 
-    async function refreshDisplay(){
-      const a = await fetch("/refreshTimesheetDisplay?data=")
-  }
+    function refreshTimesheetDisplay() {
+      fetch("/refreshTimesheetDisplay")
+        .then(response => response.text())
+        .then(data => {
+          // Update the report section with the refreshed data
+          document.getElementById("timesheet-report").innerHTML = data;
+        })
+        .catch(error => console.error('Error refreshing timesheet:', error));
+    }
   </script>
 {% endblock %}
 
@@ -31,15 +34,14 @@
 
 {% block page_content %}
     <h1>Timesheet</h1>
-<div style="position: relative">
-    {{ wtf.quick_form(shift) }}
-</div>
+    <div style="position: relative">
+        {{ wtf.quick_form(shift) }}
+    </div>
 
     <h2>Report</h2>
-    <p>Here is where the current pay period will be reported back in case any records need to be edited <button onclick=refreshTimesheetDisplay()>Refresh</button></p>
+    <p>Here is where the current pay period will be reported back in case any records need to be edited <button onclick="refreshTimesheetDisplay()">Refresh</button></p>
   
-    {{ report|safe }}
-    
-
+    <div id="timesheet-report">
+        {{ report | safe }}
+    </div>
 {% endblock %}
-

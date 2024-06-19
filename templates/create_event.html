@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+    <h2>Create Event</h2>
+    <form method="POST" action="{{ url_for('create_event') }}">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.showName.label(class="form-control-label") }}
+            {{ form.showName(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.showNumber.label(class="form-control-label") }}
+            {{ form.showNumber(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.accountManager.label(class="form-control-label") }}
+            {{ form.accountManager(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.location.label(class="form-control-label") }}
+            {{ form.location(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+{% endblock %}
