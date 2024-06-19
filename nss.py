@@ -4,13 +4,14 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import delete
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateTimeField, SubmitField, IntegerField, FloatField
+from wtforms import StringField, DateTimeField, SubmitField, IntegerField, FloatField, SelectField
 from wtforms.validators import DataRequired, InputRequired
 from flask_bootstrap import Bootstrap
 from dotenv import load_dotenv
 import os
 import datetime
 import pandas as pd
+from flask_wtf.csrf import CSRFProtect
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -21,6 +22,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'da
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+csrf = CSRFProtect(app)
 
 accountManagersList = ['Rob Sandolowich', 'Joel Dubin', 'Corbin Elliott', 'Fox Procenko', 'Dave Lickers']
 
@@ -44,7 +46,7 @@ class ExpenseForm(FlaskForm):
 class EventForm(FlaskForm):
     showName = StringField('Show Name: ', validators=[InputRequired(), DataRequired()])
     showNumber = IntegerField('Show Number: ', validators=[InputRequired(), DataRequired()])
-    accountManager = StringField('Account Manager: ', validators=[InputRequired(), DataRequired()])
+    accountManager = SelectField('Account Manager: ', choices=[], validators=[InputRequired(), DataRequired()])
     location = StringField('Location: ', validators=[InputRequired(), DataRequired()])
     submit = SubmitField('Submit')
 
@@ -149,6 +151,8 @@ def index():
 @app.route('/create_event', methods=['GET', 'POST'])
 def create_event():
     form = EventForm()
+    form.accountManager.choices = [(manager, manager) for manager in accountManagersList]
+
     if form.validate_on_submit():
         event = Event(
             showName=form.showName.data,
