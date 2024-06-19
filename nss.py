@@ -258,6 +258,10 @@ def createTimeReportCH():
     timesheet['Times'] = times
     timesheet['Hours'] = hours
 
+    timesheet['Date'] = pd.to_datetime(timesheet['Date'], format='%m/%d/%Y')
+
+    timesheet = timesheet.sort_values('Date')
+
     pd.set_option('display.max_colwidth', None)
 
     reportHTML = timesheet.to_html(index=False, justify='left')
@@ -289,6 +293,10 @@ def createExpenseReportCH():
     expensereport['Worker'] = worker
     expensereport['Details'] = details
     expensereport['Total'] = total
+
+    expensereport['Date'] = pd.to_datetime(expensereport['Date'], format='%m/%d/%Y')
+
+    expensereport = expensereport.sort_values(by='date')
 
     pd.set_option('display.max_colwidth', None)
 
